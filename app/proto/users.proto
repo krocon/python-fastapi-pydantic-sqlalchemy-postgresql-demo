@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package users.v1;
+
+// field numbers are the contract – never reuse or renumber them
+message Item {
+  int32 id = 1;
+  string title = 2;
+  string description = 3;
+  string price = 4;  // decimal as text, e.g. "19.99" – never double for money
+  int32 owner_id = 5;
+}
+
+message User {
+  int32 id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  bool is_active = 5;
+  repeated Item items = 6;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  string role = 3;
+}
+
+message UserList {
+  repeated User users = 1;
+  int32 total = 2;
+}

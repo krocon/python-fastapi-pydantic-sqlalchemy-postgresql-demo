@@ -48,7 +48,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 021 ✅ | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
 | 022 ✅ | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
 | 023 ✅ | `ep-023` | GraphQL-Mutations | GraphQL mutations |
-| 024 | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
+| 024 ✅ | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
 | 025 | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
 | 026 | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
 | 027 | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
@@ -388,4 +388,17 @@ uv run fastapi dev
 # im GraphiQL-Explorer (http://localhost:8000/graphql):
 mutation { createUser(input: {username: "carol", email: "carol@example.com"}) { id username role } }
 mutation { createItem(input: {title: "Headset", price: "79.00", ownerId: 3}) { id title price } }
+```
+
+## Folge 024 – Protobuf-Schema und Codegen
+
+Dritte Schnittstelle, Teil 1: der Vertrag. `app/proto/users.proto` beschreibt die Nachrichten mit **Feldnummern** –
+sie, nicht die Namen, landen im Binärformat. Preise als `string` (Dezimaltext), nie als `double`.
+`grpcio-tools` (nur Dev-Abhängigkeit) erzeugt `users_pb2.py` und Typ-Stubs `users_pb2.pyi`; zur Laufzeit reicht `protobuf`.
+
+```bash
+git checkout ep-024
+uv sync
+uv run python -m scripts.gen_proto      # = protoc -Iapp/proto --python_out=… --pyi_out=… users.proto
+uv run python -c "from app.proto import users_pb2; u = users_pb2.User(id=1, username='alice'); print(u.SerializeToString())"
 ```
