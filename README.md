@@ -50,7 +50,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 023 ✅ | `ep-023` | GraphQL-Mutations | GraphQL mutations |
 | 024 ✅ | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
 | 025 ✅ | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
-| 026 | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
+| 026 ✅ | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
 | 027 | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
 | 028 | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
 | 029 | `ep-029` | Die API im Docker-Image | The API in a Docker image |
@@ -421,4 +421,17 @@ req = users_pb2.CreateUserRequest(username='dave', email='dave@example.com')
 r = httpx.post('http://localhost:8000/api/v1/proto/users', content=req.SerializeToString(),
                headers={'Content-Type': 'application/x-protobuf'})
 print(r.status_code, users_pb2.User.FromString(r.content))"
+```
+
+## Folge 026 – Tests mit pytest und httpx
+
+`httpx.AsyncClient` mit `ASGITransport(app=app)` ruft die App **direkt** auf – kein Server, kein Port.
+`pytest-asyncio` im Modus `auto` (in `pyproject.toml`) macht aus jeder `async def test_…` einen Test,
+eine gemeinsame Event-Loop für alle Tests hält den Connection-Pool stabil.
+Noch ein Haken: Die Tests schreiben in die Entwicklungs-Datenbank – das lösen wir in Folge 027.
+
+```bash
+git checkout ep-026
+docker compose up -d && uv run alembic upgrade head
+uv run pytest -v          # 4 passed
 ```
