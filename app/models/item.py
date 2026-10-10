@@ -19,4 +19,4 @@ class Item(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))  # exact: never Float for money
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    owner: Mapped["User"] = relationship(back_populates="items")
+    owner: Mapped["User"] = relationship(back_populates="items", lazy="raise")

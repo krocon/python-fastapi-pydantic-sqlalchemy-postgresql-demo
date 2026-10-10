@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.schemas.item import ItemRead
+
 RESERVED_NAMES = {"admin", "root", "api"}
 
 
@@ -53,3 +55,7 @@ class UserRead(UserBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime | None
+
+
+class UserWithItems(UserRead):
+    items: list[ItemRead]

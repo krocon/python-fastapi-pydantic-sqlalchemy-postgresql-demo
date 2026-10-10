@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.core.database import SessionDep
 from app.schemas.item import ItemRead
-from app.schemas.user import UserCreate, UserRead, UserUpdate
+from app.schemas.user import UserCreate, UserRead, UserUpdate, UserWithItems
 from app.services import item_service, user_service
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
@@ -14,8 +14,8 @@ async def list_users(session: SessionDep, q: str | None = None, active: bool | N
 
 
 @router.get("/{user_id}")
-async def get_user(user_id: int, session: SessionDep) -> UserRead:
-    user = await user_service.get_user(session, user_id)
+async def get_user(user_id: int, session: SessionDep) -> UserWithItems:
+    user = await user_service.get_user_with_items(session, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user

@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
@@ -16,6 +17,12 @@ async def list_users(session: AsyncSession, q: str | None = None, active: bool |
     if active is not None:
         stmt = stmt.where(User.is_active == active)
     return (await session.scalars(stmt)).all()
+
+
+async def get_user_with_items(session: AsyncSession, user_id: int) -> User | None:
+    # load the items up front with ONE extra query – no lazy loading in async code
+    stmt = select(User).options(selectinload(User.items)).where(User.id == user_id)
+    return (await session.scalars(stmt)).one_or_none()
 
 
 async def get_by_username(session: AsyncSession, username: str) -> User | None:

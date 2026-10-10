@@ -25,4 +25,5 @@ class User(Base):
         back_populates="owner",
         cascade="all, delete-orphan",  # items belong to their user
         passive_deletes=True,  # let ON DELETE CASCADE in the database do the work
+        lazy="raise",  # never load implicitly – use selectinload() in the query
     )

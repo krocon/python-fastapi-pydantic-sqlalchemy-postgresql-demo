@@ -41,7 +41,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 014 ✅ | `ep-014` | Eine Session pro Request | One session per request |
 | 015 ✅ | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
 | 016 ✅ | `ep-016` | flush, commit und refresh | flush, commit and refresh |
-| 017 | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
+| 017 ✅ | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
 | 018 | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
 | 019 | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
 | 020 | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
@@ -286,4 +286,19 @@ git checkout ep-016
 docker compose exec db psql -U app -d app -c "drop table if exists items, users"   # neue Spalte updated_at
 uv run python -m scripts.create_tables
 DEBUG=true uv run fastapi dev            # SQL im Log: INSERT … RETURNING users.id, users.created_at
+```
+
+## Folge 017 – Lazy Loading und MissingGreenlet
+
+`GET /api/v1/users/{id}` liefert jetzt den User **mit** Items. Ohne Vorkehrung will SQLAlchemy `user.items` beim Zugriff
+nachladen – im Async-Code geht das nicht: `MissingGreenlet` → 500.
+Lösung: `selectinload(User.items)` lädt die Items vorab mit **einer** zusätzlichen Abfrage (`WHERE owner_id IN (…)`).
+`lazy="raise"` am Relationship macht jedes vergessene Nachladen sofort sichtbar.
+
+```bash
+git checkout ep-017
+docker compose exec db psql -U app -d app -c "drop table if exists items, users"
+uv run python -m scripts.create_tables && uv run python -m scripts.seed
+DEBUG=true uv run fastapi dev
+curl localhost:8000/api/v1/users/1       # User inkl. items, zwei SELECTs im Log
 ```
