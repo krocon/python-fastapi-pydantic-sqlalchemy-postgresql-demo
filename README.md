@@ -34,7 +34,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 007 ✅ | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
 | 008 ✅ | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
 | 009 ✅ | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
-| 010 | `ep-010` | Async Engine und Session | Async engine and session |
+| 010 ✅ | `ep-010` | Async Engine und Session | Async engine and session |
 | 011 | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
 | 012 | `ep-012` | Geld nie als float speichern | Never store money as float |
 | 013 | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
@@ -184,4 +184,18 @@ cp .env.example .env
 docker compose up -d            # startet den Service db
 docker compose ps               # STATUS: … (healthy)
 docker compose exec db psql -U app -d app -c "select version();"
+```
+
+## Folge 010 – Async Engine und Session
+
+`app/core/database.py`: **eine** Engine pro Prozess (= Connection-Pool) und eine `async_sessionmaker`-Fabrik.
+Treiber `asyncpg` steckt in der URL (`postgresql+asyncpg://`). SQLAlchemy 2.1 braucht das Extra `sqlalchemy[asyncio]`
+(installiert `greenlet`).
+
+```bash
+git checkout ep-010
+docker compose up -d
+uv sync
+uv run python -m scripts.db_check      # PostgreSQL 18.x on …
+DEBUG=true uv run python -m scripts.db_check   # mit SQL-Log (echo)
 ```
