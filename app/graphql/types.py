@@ -38,3 +38,18 @@ class UserType:
             is_active=user.is_active,
             items=[ItemType.from_model(i) for i in user.items],
         )
+
+
+@strawberry.input
+class CreateUserInput:
+    username: str
+    email: str
+    role: str = "user"
+
+
+@strawberry.input
+class CreateItemInput:
+    title: str
+    price: Decimal
+    owner_id: int
+    description: str = ""

@@ -47,7 +47,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 020 ✅ | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
 | 021 ✅ | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
 | 022 ✅ | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
-| 023 | `ep-023` | GraphQL-Mutations | GraphQL mutations |
+| 023 ✅ | `ep-023` | GraphQL-Mutations | GraphQL mutations |
 | 024 | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
 | 025 | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
 | 026 | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
@@ -374,4 +374,18 @@ uv sync && uv run fastapi dev
 curl localhost:8000/graphql -H "Content-Type: application/json" \
      -d '{"query":"{ users { username items { title price } } }"}'
 # Browser: http://localhost:8000/graphql
+```
+
+## Folge 023 – GraphQL-Mutations
+
+`@strawberry.input` beschreibt die Eingaben, `class Mutation` die schreibenden Operationen.
+Validiert wird mit **denselben** Pydantic-Modellen wie bei REST (`UserCreate`, `ItemCreate`) – eine Quelle der Wahrheit.
+Fehler kommen als GraphQL-`errors` mit `extensions.code` (`BAD_USER_INPUT`, `CONFLICT`, `NOT_FOUND`).
+
+```bash
+git checkout ep-023
+uv run fastapi dev
+# im GraphiQL-Explorer (http://localhost:8000/graphql):
+mutation { createUser(input: {username: "carol", email: "carol@example.com"}) { id username role } }
+mutation { createItem(input: {title: "Headset", price: "79.00", ownerId: 3}) { id title price } }
 ```
