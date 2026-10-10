@@ -27,7 +27,7 @@ git checkout ep-005        # Stand nach Folge 5
 |---|---|---|---|
 | 001 ✅ | `ep-001` | Ein Backend, drei Schnittstellen | One backend, three APIs |
 | 002 ✅ | `ep-002` | Swagger-Doku gratis | Free Swagger docs |
-| 003 | `ep-003` | Projektstruktur in Schichten | A layered project structure |
+| 003 ✅ | `ep-003` | Projektstruktur in Schichten | A layered project structure |
 | 004 | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
 | 005 | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
 | 006 | `ep-006` | Response-Modelle | Response models |
@@ -85,4 +85,22 @@ curl localhost:8000/users/1      # {"id":1,"username":"alice"}
 curl localhost:8000/users/abc    # 422 – int_parsing
 curl localhost:8000/users/9      # 404 – User not found
 # Browser: http://localhost:8000/docs (Swagger UI) · /redoc · /openapi.json
+```
+
+## Folge 003 – Projektstruktur in Schichten
+
+`main.py` wandert nach `app/`. Router sprechen HTTP, Services enthalten die Logik – und wissen nichts von HTTP.
+
+```
+app/
+├── main.py              # App bauen, Router einhängen
+├── routers/users.py     # HTTP: Pfade, Statuscodes  (APIRouter, prefix /api/v1/users)
+└── services/user_service.py   # Logik, später mit Datenbank
+# kommen noch: core/ (Konfiguration, DB) · schemas/ (Pydantic) · models/ (SQLAlchemy) · graphql/ · proto/
+```
+
+```bash
+git checkout ep-003
+uv run fastapi dev               # Entrypoint jetzt app.main:app
+curl localhost:8000/api/v1/users
 ```
