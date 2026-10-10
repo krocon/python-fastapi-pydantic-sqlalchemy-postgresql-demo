@@ -52,7 +52,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 025 ✅ | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
 | 026 ✅ | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
 | 027 ✅ | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
-| 028 | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
+| 028 ✅ | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
 | 029 | `ep-029` | Die API im Docker-Image | The API in a Docker image |
 | 030 | `ep-030` | Finale – REST, GraphQL oder Protobuf | Finale – REST, GraphQL or Protobuf? |
 
@@ -447,4 +447,20 @@ Kein SQLite-Ersatz: Die Tests laufen gegen PostgreSQL – in einer **eigenen** D
 git checkout ep-027
 docker compose up -d
 uv run pytest -v         # 14 passed – und die Entwicklungs-Datenbank bleibt unberührt
+```
+
+## Folge 028 – Lifespan und Health-Check
+
+- `lifespan`: ein Async-Context-Manager – Code **vor** `yield` läuft beim Start, Code **danach** beim Herunterfahren
+  (hier: `engine.dispose()` schließt den Connection-Pool sauber). Ersetzt die alten `@app.on_event`-Hooks.
+- `/health/live`: Lebt der Prozess? Fasst die Datenbank nie an.
+- `/health/ready`: Darf diese Instanz Traffic bekommen? Nur wenn PostgreSQL in 2 Sekunden antwortet – sonst `503`.
+
+```bash
+git checkout ep-028
+uv run fastapi dev
+curl -i localhost:8000/health/ready      # 200 {"status":"ok","database":"up"}
+docker compose stop db
+curl -i localhost:8000/health/ready      # 503 {"status":"unavailable","database":"down"}
+docker compose start db                  # nach ein paar Sekunden wieder 200 (pool_pre_ping)
 ```
