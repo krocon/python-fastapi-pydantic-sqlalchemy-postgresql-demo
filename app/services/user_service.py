@@ -9,8 +9,18 @@ from app.models import User
 from app.schemas.user import UserCreate, UserUpdate
 
 
-async def list_users(session: AsyncSession) -> Sequence[User]:
-    return (await session.scalars(select(User).order_by(User.id))).all()
+async def list_users(session: AsyncSession, q: str | None = None, active: bool | None = None) -> Sequence[User]:
+    stmt = select(User).order_by(User.id)
+    if q:
+        stmt = stmt.where(User.username.ilike(f"%{q}%"))  # bound parameter – no SQL injection
+    if active is not None:
+        stmt = stmt.where(User.is_active == active)
+    return (await session.scalars(stmt)).all()
+
+
+async def get_by_username(session: AsyncSession, username: str) -> User | None:
+    stmt = select(User).where(User.username == username)
+    return (await session.execute(stmt)).scalar_one_or_none()
 
 
 async def get_user(session: AsyncSession, user_id: int) -> User | None:

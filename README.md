@@ -39,7 +39,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 012 ✅ | `ep-012` | Geld nie als float speichern | Never store money as float |
 | 013 ✅ | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
 | 014 ✅ | `ep-014` | Eine Session pro Request | One session per request |
-| 015 | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
+| 015 ✅ | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
 | 016 | `ep-016` | flush, commit und refresh | flush, commit and refresh |
 | 017 | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
 | 018 | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
@@ -255,4 +255,18 @@ uv run fastapi dev
 curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"alice","email":"alice@example.com"}'
 curl -X POST localhost:8000/api/v1/items -H "Content-Type: application/json" -d '{"title":"Keyboard","price":"49.90","owner_id":1}'
 # Server neu starten – die Daten sind noch da
+```
+
+## Folge 015 – Abfragen im 2.0-Stil
+
+`select(User).where(...).order_by(...)` baut die Abfrage, `session.scalars(stmt).all()` liefert Objekte,
+`scalar_one_or_none()` genau eins oder `None`. Bedingungen lassen sich Schritt für Schritt anhängen.
+Werte landen als gebundene Parameter (`$1`) in der Abfrage – keine SQL-Injection.
+
+```bash
+git checkout ep-015
+uv run fastapi dev
+curl "localhost:8000/api/v1/users?q=ali"          # alice, alina
+curl "localhost:8000/api/v1/users?active=false"
+curl localhost:8000/api/v1/users/1/items          # sortiert nach Preis, absteigend
 ```
