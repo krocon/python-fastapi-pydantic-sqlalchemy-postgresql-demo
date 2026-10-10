@@ -54,7 +54,48 @@ git checkout ep-005        # Stand nach Folge 5
 | 027 ✅ | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
 | 028 ✅ | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
 | 029 ✅ | `ep-029` | Die API im Docker-Image | The API in a Docker image |
-| 030 | `ep-030` | Finale – REST, GraphQL oder Protobuf | Finale – REST, GraphQL or Protobuf? |
+| 030 ✅ | `ep-030` | Finale – REST, GraphQL oder Protobuf | Finale – REST, GraphQL or Protobuf? |
+
+## Architektur (Stand ep-030)
+
+```
+             REST (JSON)          GraphQL (Strawberry)        Protobuf (binär)
+        app/routers/*.py         app/graphql/schema.py       app/routers/proto.py
+                  \                        |                        /
+                   \___ Pydantic v2: app/schemas/ (eine Validierung für alle) ___/
+                                           |
+                           app/services/  (Geschäftslogik, protokollfrei)
+                                           |
+                 SQLAlchemy 2 async: app/models/ · app/core/database.py (SessionDep)
+                                           |
+                        PostgreSQL 18 (compose.yaml) · Alembic: migrations/
+```
+
+## Schnellstart (fertiger Stand)
+
+```bash
+git checkout ep-030            # oder main
+docker compose up --build -d   # db → migrate (alembic upgrade head) → api
+curl localhost:8000/health/ready
+uv run python demo_client.py   # ein User, drei Schnittstellen, eine Datenbank
+```
+
+Lokal entwickeln:
+
+```bash
+cp .env.example .env
+docker compose up -d db
+uv sync
+uv run alembic upgrade head
+uv run fastapi dev             # http://localhost:8000/docs · /graphql
+uv run pytest                  # Tests gegen PostgreSQL (Datenbank app_test)
+```
+
+| Schnittstelle | Pfad | Stärke |
+|---|---|---|
+| REST | `/api/v1/users`, `/api/v1/items` | Standard, Caching, Swagger-Doku |
+| GraphQL | `/graphql` | Client wählt die Felder, verschachtelt in einem Request |
+| Protobuf | `/api/v1/proto/users` | klein und schnell (≈ ⅓ von JSON), fester Vertrag |
 
 ---
 
@@ -479,4 +520,19 @@ docker compose up --build -d
 docker compose ps                     # db healthy · migrate exited (0) · api healthy
 curl localhost:8000/health/ready
 docker compose logs migrate           # Running upgrade  -> 8647569b0d13 …
+```
+
+## Folge 030 – Finale: REST, GraphQL oder Protobuf?
+
+`demo_client.py` legt einen User per **REST** an, ein Item per **GraphQL** und liest beides per **Protobuf** –
+drei Protokolle, eine Service-Schicht, eine Datenbank. `requests.http` enthält alle Aufrufe zum Anklicken
+(JetBrains HTTP Client / VS Code REST Client).
+
+```bash
+git checkout ep-030
+docker compose up --build -d
+uv run python demo_client.py
+# REST     POST /api/v1/users      → 201, id=…, 160 bytes
+# GraphQL  createItem               → 200, item=…, price=49.90
+# Protobuf GET /api/v1/proto/users/… → 200, demo_… has 1 item(s), 71 bytes
 ```
