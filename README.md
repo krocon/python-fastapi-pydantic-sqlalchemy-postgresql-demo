@@ -36,7 +36,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 009 ✅ | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
 | 010 ✅ | `ep-010` | Async Engine und Session | Async engine and session |
 | 011 ✅ | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
-| 012 | `ep-012` | Geld nie als float speichern | Never store money as float |
+| 012 ✅ | `ep-012` | Geld nie als float speichern | Never store money as float |
 | 013 | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
 | 014 | `ep-014` | Eine Session pro Request | One session per request |
 | 015 | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
@@ -211,4 +211,17 @@ git checkout ep-011
 docker compose up -d
 uv run python -m scripts.create_tables      # zeigt das CREATE TABLE
 docker compose exec db psql -U app -d app -c "\d users"
+```
+
+## Folge 012 – Geld nie als float speichern
+
+`float` ist binär und rundet: `sum([19.99] * 10)` ergibt `199.89999999999998`. Für Preise daher
+`Numeric(10, 2)` in der Datenbank und `Decimal` in Python und Pydantic (`max_digits`, `decimal_places`).
+Pydantic gibt `Decimal` im JSON als **String** aus (`"19.99"`) – verlustfrei für jeden Client.
+
+```bash
+git checkout ep-012
+uv run python -c "print(sum([19.99] * 10))"                                   # 199.89999999999998
+uv run python -c "from decimal import Decimal; print(sum([Decimal('19.99')] * 10))"   # 199.90
+uv run python -m scripts.create_tables                                        # items.price NUMERIC(10, 2)
 ```
