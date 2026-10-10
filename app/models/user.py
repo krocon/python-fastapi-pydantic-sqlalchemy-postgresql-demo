@@ -1,7 +1,9 @@
-from datetime import datetime, timezone
-from typing import List, TYPE_CHECKING
-from sqlalchemy import String, Boolean, DateTime
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.models.base import Base
 
 if TYPE_CHECKING:
@@ -11,24 +13,17 @@ if TYPE_CHECKING:
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    email: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
-    role: Mapped[str] = mapped_column(String(20), default="user", nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True)
+    role: Mapped[str] = mapped_column(String(20), default="user")
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
-    # 1:n Beziehung zu Items
-    items: Mapped[List["Item"]] = relationship(
-        "Item",
+    items: Mapped[list["Item"]] = relationship(
         back_populates="owner",
-        cascade="all, delete-orphan",
-        lazy="selectin",
+        cascade="all, delete-orphan",  # items belong to their user
+        passive_deletes=True,  # let ON DELETE CASCADE in the database do the work
+        lazy="raise",  # never load implicitly – use selectinload() in the query
     )
-
-    def __repr__(self) -> str:
-        return f"<User id={self.id} username='{self.username}' email='{self.email}'>"

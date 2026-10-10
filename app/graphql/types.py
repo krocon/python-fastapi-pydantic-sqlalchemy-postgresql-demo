@@ -1,37 +1,55 @@
-from typing import List, Optional
+from decimal import Decimal
+from typing import Self
+
 import strawberry
 
+from app.models import Item, User
 
-@strawberry.type(description="GraphQL Typ für ein Item/Produkt")
+
+@strawberry.type
 class ItemType:
     id: int
     title: str
     description: str
-    price: float
+    price: Decimal
     owner_id: int
 
+    @classmethod
+    def from_model(cls, item: Item) -> Self:
+        return cls(id=item.id, title=item.title, description=item.description, price=item.price, owner_id=item.owner_id)
 
-@strawberry.type(description="GraphQL Typ für einen Benutzer inklusive seiner Items")
+
+@strawberry.type
 class UserType:
     id: int
     username: str
     email: str
     role: str
     is_active: bool
-    created_at: str
-    items: List[ItemType]
+    items: list[ItemType]
+
+    @classmethod
+    def from_model(cls, user: User) -> Self:
+        return cls(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role,
+            is_active=user.is_active,
+            items=[ItemType.from_model(i) for i in user.items],
+        )
 
 
-@strawberry.input(description="Input zum Erstellen eines neuen Benutzers via GraphQL")
+@strawberry.input
 class CreateUserInput:
     username: str
     email: str
-    role: Optional[str] = "user"
+    role: str = "user"
 
 
-@strawberry.input(description="Input zum Erstellen eines neuen Items via GraphQL")
+@strawberry.input
 class CreateItemInput:
     title: str
-    description: Optional[str] = ""
-    price: float
+    price: Decimal
     owner_id: int
+    description: str = ""

@@ -1,121 +1,73 @@
-from typing import List, Optional
+import dataclasses
+
 import strawberry
-from strawberry.fastapi import GraphQLRouter
-from fastapi import Depends
+from graphql import GraphQLError
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
-from app.services.user_service import UserService
-from app.services.item_service import ItemService
-from app.graphql.types import UserType, ItemType, CreateUserInput, CreateItemInput
+from strawberry.fastapi import GraphQLRouter
 
-
-def to_item_type(item) -> ItemType:
-    return ItemType(
-        id=item.id,
-        title=item.title,
-        description=item.description or "",
-        price=float(item.price),
-        owner_id=item.owner_id,
-    )
-
-
-def to_user_type(user) -> UserType:
-    return UserType(
-        id=user.id,
-        username=user.username,
-        email=user.email,
-        role=user.role,
-        is_active=user.is_active,
-        created_at=user.created_at.isoformat() if user.created_at else "",
-        items=[to_item_type(i) for i in (user.items or [])],
-    )
+from app.core.database import SessionDep
+from app.core.errors import CONFLICT_MESSAGES
+from app.graphql.types import CreateItemInput, CreateUserInput, ItemType, UserType
+from app.schemas.item import ItemCreate
+from app.schemas.user import UserCreate
+from app.services import item_service, user_service
 
 
 @strawberry.type
 class Query:
-    @strawberry.field(description="Alle Benutzer inklusive zugeordneter Items abrufen")
-    async def users(
-        self,
-        info: strawberry.Info,
-        skip: int = 0,
-        limit: int = 100,
-    ) -> List[UserType]:
-        db: AsyncSession = info.context["db"]
-        users = await UserService.get_all(db, skip=skip, limit=limit)
-        return [to_user_type(u) for u in users]
+    @strawberry.field(description="Users with their items – the client picks the fields")
+    async def users(self, info: strawberry.Info, limit: int = 20, offset: int = 0) -> list[UserType]:
+        session: AsyncSession = info.context["session"]
+        users, _ = await user_service.list_users(session, limit=min(limit, 100), offset=offset, with_items=True)
+        return [UserType.from_model(u) for u in users]
 
-    @strawberry.field(description="Einzelnen Benutzer nach ID abrufen")
-    async def user(self, info: strawberry.Info, id: int) -> Optional[UserType]:
-        db: AsyncSession = info.context["db"]
-        user = await UserService.get_by_id(db, id)
-        if not user:
-            return None
-        return to_user_type(user)
+    @strawberry.field(description="One user by id")
+    async def user(self, info: strawberry.Info, id: int) -> UserType | None:
+        user = await user_service.get_user_with_items(info.context["session"], id)
+        return UserType.from_model(user) if user else None
 
-    @strawberry.field(description="Alle Items abrufen")
-    async def items(
-        self,
-        info: strawberry.Info,
-        skip: int = 0,
-        limit: int = 100,
-    ) -> List[ItemType]:
-        db: AsyncSession = info.context["db"]
-        items = await ItemService.get_all(db, skip=skip, limit=limit)
-        return [to_item_type(i) for i in items]
+
+def validated[M](model: type[M], data: object) -> M:
+    """Same Pydantic rules as REST – one source of truth for validation."""
+    try:
+        return model.model_validate(dataclasses.asdict(data))
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        raise GraphQLError(f"{first['loc'][0]}: {first['msg']}", extensions={"code": "BAD_USER_INPUT"}) from None
 
 
 @strawberry.type
 class Mutation:
-    @strawberry.mutation(description="Einen neuen Benutzer über GraphQL erstellen")
-    async def create_user(
-        self,
-        info: strawberry.Info,
-        input: CreateUserInput,
-    ) -> UserType:
-        db: AsyncSession = info.context["db"]
-        existing_user = await UserService.get_by_username(db, input.username)
-        if existing_user:
-            raise ValueError(f"Username '{input.username}' existiert bereits.")
+    @strawberry.mutation(description="Create a user – validated by the same Pydantic model as REST")
+    async def create_user(self, info: strawberry.Info, input: CreateUserInput) -> UserType:
+        session: AsyncSession = info.context["session"]
+        data = validated(UserCreate, input)
+        try:
+            user = await user_service.create_user(session, data)
+        except IntegrityError as exc:
+            await session.rollback()
+            constraint = getattr(exc.orig.__cause__, "constraint_name", None)
+            raise GraphQLError(CONFLICT_MESSAGES.get(constraint, "Conflict"), extensions={"code": "CONFLICT"}) from None
+        return UserType(id=user.id, username=user.username, email=user.email, role=user.role,
+                        is_active=user.is_active, items=[])
 
-        existing_email = await UserService.get_by_email(db, input.email)
-        if existing_email:
-            raise ValueError(f"Email '{input.email}' existiert bereits.")
-
-        user = await UserService.create(
-            db,
-            username=input.username,
-            email=input.email,
-            role=input.role or "user",
-        )
-        return to_user_type(user)
-
-    @strawberry.mutation(description="Ein neues Item über GraphQL erstellen")
-    async def create_item(
-        self,
-        info: strawberry.Info,
-        input: CreateItemInput,
-    ) -> ItemType:
-        db: AsyncSession = info.context["db"]
-        owner = await UserService.get_by_id(db, input.owner_id)
-        if not owner:
-            raise ValueError(f"Benutzer mit ID {input.owner_id} existiert nicht.")
-
-        item = await ItemService.create(
-            db,
-            title=input.title,
-            description=input.description or "",
-            price=input.price,
-            owner_id=input.owner_id,
-        )
-        return to_item_type(item)
+    @strawberry.mutation(description="Create an item for an existing user")
+    async def create_item(self, info: strawberry.Info, input: CreateItemInput) -> ItemType:
+        session: AsyncSession = info.context["session"]
+        data = validated(ItemCreate, input)
+        if await user_service.get_user(session, data.owner_id) is None:
+            raise GraphQLError("Owner not found", extensions={"code": "NOT_FOUND"})
+        return ItemType.from_model(await item_service.create_item(session, data))
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 
 
-async def get_context(db: AsyncSession = Depends(get_db)):
-    """Injected die SQLAlchemy-Session in den Strawberry-Kontext."""
-    return {"db": db}
+async def get_context(session: SessionDep) -> dict:
+    # same session dependency as REST: one session per request, commit/rollback in get_session
+    return {"session": session}
 
 
 graphql_router = GraphQLRouter(schema, context_getter=get_context)

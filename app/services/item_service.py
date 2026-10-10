@@ -1,43 +1,25 @@
-from typing import Sequence, Optional
-from sqlalchemy import select
+from collections.abc import Sequence
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.item import Item
+
+from app.models import Item
+from app.schemas.item import ItemCreate
 
 
-class ItemService:
-    @staticmethod
-    async def get_by_id(db: AsyncSession, item_id: int) -> Optional[Item]:
-        stmt = select(Item).where(Item.id == item_id)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+async def list_items(session: AsyncSession, limit: int = 20, offset: int = 0) -> tuple[Sequence[Item], int]:
+    total = await session.scalar(select(func.count()).select_from(Item))
+    page = await session.scalars(select(Item).order_by(Item.id).limit(limit).offset(offset))
+    return page.all(), total or 0
 
-    @staticmethod
-    async def get_by_owner(db: AsyncSession, owner_id: int) -> Sequence[Item]:
-        stmt = select(Item).where(Item.owner_id == owner_id).order_by(Item.id.asc())
-        result = await db.execute(stmt)
-        return result.scalars().all()
 
-    @staticmethod
-    async def get_all(db: AsyncSession, skip: int = 0, limit: int = 100) -> Sequence[Item]:
-        stmt = select(Item).offset(skip).limit(limit).order_by(Item.id.asc())
-        result = await db.execute(stmt)
-        return result.scalars().all()
+async def list_items_of_owner(session: AsyncSession, owner_id: int) -> Sequence[Item]:
+    stmt = select(Item).where(Item.owner_id == owner_id).order_by(Item.price.desc())
+    return (await session.scalars(stmt)).all()
 
-    @staticmethod
-    async def create(
-        db: AsyncSession,
-        title: str,
-        description: str,
-        price: float,
-        owner_id: int,
-    ) -> Item:
-        item = Item(
-            title=title,
-            description=description,
-            price=price,
-            owner_id=owner_id,
-        )
-        db.add(item)
-        await db.flush()
-        await db.refresh(item)
-        return item
+
+async def create_item(session: AsyncSession, data: ItemCreate) -> Item:
+    item = Item(**data.model_dump())
+    session.add(item)
+    await session.flush()
+    return item

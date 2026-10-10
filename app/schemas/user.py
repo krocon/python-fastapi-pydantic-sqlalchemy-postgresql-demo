@@ -1,30 +1,61 @@
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
 from app.schemas.item import ItemRead
+
+RESERVED_NAMES = {"admin", "root", "api"}
 
 
 class UserBase(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50, examples=["alice"])
-    email: str = Field(..., min_length=5, max_length=100, examples=["alice@example.com"])
-    role: str = Field(default="user", max_length=20, examples=["admin", "user"])
+    username: str = Field(min_length=3, max_length=50, pattern=r"^[a-z0-9_]+$")
+    email: EmailStr = Field(max_length=100)
+    role: Literal["user", "admin"] = "user"
 
 
 class UserCreate(UserBase):
-    pass
+    """Request body of POST /api/v1/users."""
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: object) -> object:
+        # runs BEFORE the type and pattern checks: "  Alice " → "alice"
+        return value.strip().lower() if isinstance(value, str) else value
+
+    @field_validator("username")
+    @classmethod
+    def not_reserved(cls, value: str) -> str:
+        if value in RESERVED_NAMES:
+            raise ValueError(f"'{value}' is reserved")
+        return value
 
 
 class UserUpdate(BaseModel):
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    email: Optional[str] = Field(None, min_length=5, max_length=100)
-    role: Optional[str] = Field(None, max_length=20)
-    is_active: Optional[bool] = None
+    """Body of PATCH – every field optional, only sent fields are applied."""
+
+    email: EmailStr | None = Field(default=None, max_length=100)
+    role: Literal["user", "admin"] | None = None
+    is_active: bool | None = None
+
+    @field_validator("email", "role", "is_active", mode="before")
+    @classmethod
+    def no_explicit_null(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("may be omitted, but not null")
+        return value
 
 
 class UserRead(UserBase):
+    """What the API returns – nothing more, nothing less."""
+
+    model_config = ConfigDict(from_attributes=True)  # read from objects, not only dicts
+
     id: int
     is_active: bool
     created_at: datetime
-    items: List[ItemRead] = []
+    updated_at: datetime | None
 
-    model_config = ConfigDict(from_attributes=True)
+
+class UserWithItems(UserRead):
+    items: list[ItemRead]

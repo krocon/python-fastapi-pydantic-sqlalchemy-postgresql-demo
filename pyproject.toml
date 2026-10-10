@@ -1,0 +1,29 @@
+[project]
+name = "users-items-api"
+version = "1.0.0"
+description = "FastAPI · Pydantic v2 · SQLAlchemy 2 (async) · PostgreSQL – step by step"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.16",
+    "asyncpg>=0.30",
+    "fastapi[standard]>=0.143.0",
+    "protobuf>=6.31",
+    "sqlalchemy[asyncio]>=2.0",
+    "strawberry-graphql>=0.280",
+]
+
+[tool.fastapi]
+entrypoint = "app.main:app"
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.74",
+    "pytest>=8.4",
+    "pytest-asyncio>=1.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"  # one event loop for all tests – the engine's pool lives in it
+testpaths = ["tests"]

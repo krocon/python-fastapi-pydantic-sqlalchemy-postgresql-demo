@@ -1,0 +1,43 @@
+### JetBrains HTTP client / VS Code REST Client – start the API first: uv run fastapi dev
+
+### Health
+GET http://localhost:8000/health/ready
+
+### REST: create a user
+POST http://localhost:8000/api/v1/users
+Content-Type: application/json
+
+{"username": "alice", "email": "alice@example.com"}
+
+### REST: create an item (price as string – exact decimal)
+POST http://localhost:8000/api/v1/items
+Content-Type: application/json
+
+{"title": "Keyboard", "price": "49.90", "owner_id": 1}
+
+### REST: one user with items
+GET http://localhost:8000/api/v1/users/1
+
+### REST: search + pagination
+GET http://localhost:8000/api/v1/users?q=ali&limit=10&offset=0
+
+### REST: partial update
+PATCH http://localhost:8000/api/v1/users/1
+Content-Type: application/json
+
+{"role": "admin"}
+
+### GraphQL: nested query – the client picks the fields
+POST http://localhost:8000/graphql
+Content-Type: application/json
+
+{"query": "{ users { username items { title price } } }"}
+
+### GraphQL: mutation
+POST http://localhost:8000/graphql
+Content-Type: application/json
+
+{"query": "mutation { createItem(input: {title: \"Mouse\", price: \"19.99\", ownerId: 1}) { id title price } }"}
+
+### Protobuf: binary response (use demo_client.py to decode)
+GET http://localhost:8000/api/v1/proto/users/1
