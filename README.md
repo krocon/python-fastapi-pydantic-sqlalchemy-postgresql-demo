@@ -53,7 +53,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 026 ✅ | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
 | 027 ✅ | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
 | 028 ✅ | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
-| 029 | `ep-029` | Die API im Docker-Image | The API in a Docker image |
+| 029 ✅ | `ep-029` | Die API im Docker-Image | The API in a Docker image |
 | 030 | `ep-030` | Finale – REST, GraphQL oder Protobuf | Finale – REST, GraphQL or Protobuf? |
 
 ---
@@ -463,4 +463,20 @@ curl -i localhost:8000/health/ready      # 200 {"status":"ok","database":"up"}
 docker compose stop db
 curl -i localhost:8000/health/ready      # 503 {"status":"unavailable","database":"down"}
 docker compose start db                  # nach ein paar Sekunden wieder 200 (pool_pre_ping)
+```
+
+## Folge 029 – Die API im Docker-Image
+
+- **Multi-Stage-Dockerfile**: Build-Stage mit `uv` (`uv sync --locked --no-dev`, eigener Cache-Layer für die Abhängigkeiten),
+  Runtime-Stage ohne uv, ohne Dev-Pakete, als Nicht-root-User `app`. Start mit `fastapi run` (Produktionsmodus).
+- **Healthcheck** im Image nutzt `/health/ready` aus Folge 028 – mit Python statt curl (das Slim-Image hat kein curl).
+- **compose.yaml**: `db` → `migrate` (einmalig `alembic upgrade head`, dann Ende) → `api`.
+  Reihenfolge per `depends_on` mit `service_healthy` und `service_completed_successfully`.
+
+```bash
+git checkout ep-029
+docker compose up --build -d
+docker compose ps                     # db healthy · migrate exited (0) · api healthy
+curl localhost:8000/health/ready
+docker compose logs migrate           # Running upgrade  -> 8647569b0d13 …
 ```

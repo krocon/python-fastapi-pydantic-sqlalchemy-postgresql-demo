@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("database pool closed")
 
 
-app = FastAPI(title=settings.app_name, version="0.28.0", debug=settings.debug, lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="0.29.0", debug=settings.debug, lifespan=lifespan)
 register_error_handlers(app)
 app.include_router(health.router)
 app.include_router(users.router)
