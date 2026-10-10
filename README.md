@@ -33,7 +33,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 006 ✅ | `ep-006` | Response-Modelle | Response models |
 | 007 ✅ | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
 | 008 ✅ | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
-| 009 | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
+| 009 ✅ | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
 | 010 | `ep-010` | Async Engine und Session | Async engine and session |
 | 011 | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
 | 012 | `ep-012` | Geld nie als float speichern | Never store money as float |
@@ -171,4 +171,17 @@ uv run fastapi dev
 curl -X POST  localhost:8000/api/v1/users   -H "Content-Type: application/json" -d '{"username":"alice","email":"alice@example.com"}'
 curl -X PATCH localhost:8000/api/v1/users/1 -H "Content-Type: application/json" -d '{"role":"admin"}'   # nur role ändert sich
 curl -X PATCH localhost:8000/api/v1/users/1 -H "Content-Type: application/json" -d '{"email":null}'      # 422
+```
+
+## Folge 009 – PostgreSQL mit Docker Compose
+
+`compose.yaml` startet PostgreSQL 18 mit Volume (Daten überleben Neustarts) und Healthcheck.
+Ab PostgreSQL 18 wird das Volume auf `/var/lib/postgresql` gemountet (nicht mehr `…/data`).
+
+```bash
+git checkout ep-009
+cp .env.example .env
+docker compose up -d            # startet den Service db
+docker compose ps               # STATUS: … (healthy)
+docker compose exec db psql -U app -d app -c "select version();"
 ```
