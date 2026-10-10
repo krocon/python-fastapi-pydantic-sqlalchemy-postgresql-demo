@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,13 +10,21 @@ from app.models import User
 from app.schemas.user import UserCreate, UserUpdate
 
 
-async def list_users(session: AsyncSession, q: str | None = None, active: bool | None = None) -> Sequence[User]:
-    stmt = select(User).order_by(User.id)
+async def list_users(
+    session: AsyncSession,
+    q: str | None = None,
+    active: bool | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[Sequence[User], int]:
+    stmt = select(User)
     if q:
         stmt = stmt.where(User.username.ilike(f"%{q}%"))  # bound parameter – no SQL injection
     if active is not None:
         stmt = stmt.where(User.is_active == active)
-    return (await session.scalars(stmt)).all()
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery()))
+    page = await session.scalars(stmt.order_by(User.id).limit(limit).offset(offset))  # stable order!
+    return page.all(), total or 0
 
 
 async def get_user_with_items(session: AsyncSession, user_id: int) -> User | None:

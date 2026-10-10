@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.core.database import SessionDep
+from app.schemas.common import Limit, Offset, Page
 from app.schemas.item import ItemRead
 from app.schemas.user import UserCreate, UserRead, UserUpdate, UserWithItems
 from app.services import item_service, user_service
@@ -16,8 +17,15 @@ def user_not_found() -> HTTPException:
 
 
 @router.get("")
-async def list_users(session: SessionDep, q: str | None = None, active: bool | None = None) -> list[UserRead]:
-    return await user_service.list_users(session, q=q, active=active)
+async def list_users(
+    session: SessionDep,
+    q: str | None = None,
+    active: bool | None = None,
+    limit: Limit = 20,
+    offset: Offset = 0,
+) -> Page[UserRead]:
+    users, total = await user_service.list_users(session, q=q, active=active, limit=limit, offset=offset)
+    return Page[UserRead](items=users, total=total, limit=limit, offset=offset)
 
 
 @router.get("/{user_id}", responses=NOT_FOUND)

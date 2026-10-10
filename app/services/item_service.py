@@ -1,14 +1,16 @@
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Item
 from app.schemas.item import ItemCreate
 
 
-async def list_items(session: AsyncSession) -> Sequence[Item]:
-    return (await session.scalars(select(Item).order_by(Item.id))).all()
+async def list_items(session: AsyncSession, limit: int = 20, offset: int = 0) -> tuple[Sequence[Item], int]:
+    total = await session.scalar(select(func.count()).select_from(Item))
+    page = await session.scalars(select(Item).order_by(Item.id).limit(limit).offset(offset))
+    return page.all(), total or 0
 
 
 async def list_items_of_owner(session: AsyncSession, owner_id: int) -> Sequence[Item]:

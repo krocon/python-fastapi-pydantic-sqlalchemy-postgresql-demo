@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.core.database import SessionDep
+from app.schemas.common import Limit, Offset, Page
 from app.schemas.item import ItemCreate, ItemRead
 from app.services import item_service, user_service
 
@@ -8,8 +9,9 @@ router = APIRouter(prefix="/api/v1/items", tags=["items"])
 
 
 @router.get("")
-async def list_items(session: SessionDep) -> list[ItemRead]:
-    return await item_service.list_items(session)
+async def list_items(session: SessionDep, limit: Limit = 20, offset: Offset = 0) -> Page[ItemRead]:
+    items, total = await item_service.list_items(session, limit=limit, offset=offset)
+    return Page[ItemRead](items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

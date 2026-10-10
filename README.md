@@ -45,7 +45,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 018 ✅ | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
 | 019 ✅ | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
 | 020 ✅ | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
-| 021 | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
+| 021 ✅ | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
 | 022 | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
 | 023 | `ep-023` | GraphQL-Mutations | GraphQL mutations |
 | 024 | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
@@ -346,4 +346,18 @@ git checkout ep-020
 uv run fastapi dev
 curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"bob","email":"bob@example.com"}'   # 201
 curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"bob","email":"bob2@example.com"}'  # 409 Username already exists
+```
+
+## Folge 021 – Pagination mit validierten Query-Parametern
+
+`Limit = Annotated[int, Query(ge=1, le=100)]` und `Offset = Annotated[int, Query(ge=0)]` – einmal definiert, überall nutzbar.
+`?limit=1000` wird mit 422 abgelehnt, statt die Datenbank zu fluten. Die Antwort ist ein generisches
+Pydantic-Modell `Page[T]` mit `items`, `total`, `limit`, `offset` (Python-3.12-Syntax `class Page[T](BaseModel)`).
+Wichtig: Pagination nur mit fester Sortierung (`order_by`), sonst springen Zeilen zwischen den Seiten.
+
+```bash
+git checkout ep-021
+uv run fastapi dev
+curl "localhost:8000/api/v1/users?limit=2&offset=40"
+curl "localhost:8000/api/v1/users?limit=1000"        # 422 less_than_equal
 ```
