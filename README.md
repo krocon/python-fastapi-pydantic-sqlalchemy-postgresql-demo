@@ -29,7 +29,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 002 ✅ | `ep-002` | Swagger-Doku gratis | Free Swagger docs |
 | 003 ✅ | `ep-003` | Projektstruktur in Schichten | A layered project structure |
 | 004 ✅ | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
-| 005 | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
+| 005 ✅ | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
 | 006 | `ep-006` | Response-Modelle | Response models |
 | 007 | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
 | 008 | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
@@ -115,4 +115,18 @@ git checkout ep-004
 cp .env.example .env
 uv run python -c "from app.core.config import settings; print(settings)"
 DEBUG=vielleicht uv run python -c "from app.core.config import settings"   # ValidationError: bool_parsing
+```
+
+## Folge 005 – Requests validieren mit Pydantic
+
+`app/schemas/user.py`: `UserCreate` beschreibt den Request-Body. FastAPI validiert **vor** deinem Code –
+ungültige Daten bekommen automatisch `422` mit einer Liste aller Fehler.
+
+```bash
+git checkout ep-005
+uv run fastapi dev
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
+     -d '{"username":"alice","email":"alice@example.com"}'          # 201
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
+     -d '{"username":"Al","role":"superuser"}'                      # 422: string_too_short, missing, literal_error
 ```
