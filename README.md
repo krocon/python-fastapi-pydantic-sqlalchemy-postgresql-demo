@@ -30,7 +30,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 003 ✅ | `ep-003` | Projektstruktur in Schichten | A layered project structure |
 | 004 ✅ | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
 | 005 ✅ | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
-| 006 | `ep-006` | Response-Modelle | Response models |
+| 006 ✅ | `ep-006` | Response-Modelle | Response models |
 | 007 | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
 | 008 | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
 | 009 | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
@@ -129,4 +129,18 @@ curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
      -d '{"username":"alice","email":"alice@example.com"}'          # 201
 curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
      -d '{"username":"Al","role":"superuser"}'                      # 422: string_too_short, missing, literal_error
+```
+
+## Folge 006 – Response-Modelle
+
+`UserRead` beschreibt, was die API **zurückgibt**. Der Rückgabetyp der Funktion (`-> UserRead`) ist das Response-Modell:
+FastAPI validiert, filtert auf die deklarierten Felder und dokumentiert das Schema in `/docs`.
+`from_attributes=True` erlaubt, Objekte (später SQLAlchemy-Modelle) statt Dicts zurückzugeben.
+
+```bash
+git checkout ep-006
+uv run fastapi dev
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
+     -d '{"username":"alice","email":"alice@example.com"}'
+# {"username":"alice","email":"alice@example.com","role":"user","id":1,"is_active":true,"created_at":"…Z"}
 ```
