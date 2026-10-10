@@ -26,7 +26,7 @@ git checkout ep-005        # Stand nach Folge 5
 | Folge | Tag | Thema | Topic (EN) |
 |---|---|---|---|
 | 001 ✅ | `ep-001` | Ein Backend, drei Schnittstellen | One backend, three APIs |
-| 002 | `ep-002` | Swagger-Doku gratis | Free Swagger docs |
+| 002 ✅ | `ep-002` | Swagger-Doku gratis | Free Swagger docs |
 | 003 | `ep-003` | Projektstruktur in Schichten | A layered project structure |
 | 004 | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
 | 005 | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
@@ -72,4 +72,17 @@ git checkout ep-001
 uv sync                      # legt .venv an, installiert fastapi[standard]
 uv run fastapi dev           # Entrypoint steht in pyproject.toml → [tool.fastapi]
 curl localhost:8000/         # {"status":"online"}
+```
+
+## Folge 002 – Swagger-Doku gratis
+
+Typ-Hinweise sind Validierung **und** Doku: `user_id: int` erscheint als Integer-Parameter in OpenAPI.
+
+```bash
+git checkout ep-002
+uv run fastapi dev
+curl localhost:8000/users/1      # {"id":1,"username":"alice"}
+curl localhost:8000/users/abc    # 422 – int_parsing
+curl localhost:8000/users/9      # 404 – User not found
+# Browser: http://localhost:8000/docs (Swagger UI) · /redoc · /openapi.json
 ```
