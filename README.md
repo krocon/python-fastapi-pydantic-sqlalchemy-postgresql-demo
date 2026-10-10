@@ -28,7 +28,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 001 ✅ | `ep-001` | Ein Backend, drei Schnittstellen | One backend, three APIs |
 | 002 ✅ | `ep-002` | Swagger-Doku gratis | Free Swagger docs |
 | 003 ✅ | `ep-003` | Projektstruktur in Schichten | A layered project structure |
-| 004 | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
+| 004 ✅ | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
 | 005 | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
 | 006 | `ep-006` | Response-Modelle | Response models |
 | 007 | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
@@ -103,4 +103,16 @@ app/
 git checkout ep-003
 uv run fastapi dev               # Entrypoint jetzt app.main:app
 curl localhost:8000/api/v1/users
+```
+
+## Folge 004 – Konfiguration mit pydantic-settings
+
+`app/core/config.py`: eine typisierte `Settings`-Klasse. Reihenfolge: Umgebungsvariable > `.env` > Standardwert.
+Falsche Werte stoppen die App **beim Start** – nicht erst beim ersten Request.
+
+```bash
+git checkout ep-004
+cp .env.example .env
+uv run python -c "from app.core.config import settings; print(settings)"
+DEBUG=vielleicht uv run python -c "from app.core.config import settings"   # ValidationError: bool_parsing
 ```

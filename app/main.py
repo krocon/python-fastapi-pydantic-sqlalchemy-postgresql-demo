@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 
+from app.core.config import settings
 from app.routers import users
 
-app = FastAPI(title="Users & Items API", version="0.3.0")
+app = FastAPI(title=settings.app_name, version="0.4.0", debug=settings.debug)
 app.include_router(users.router)
 
 
 @app.get("/", tags=["status"])
 async def root() -> dict[str, str]:
-    return {"status": "online"}
+    return {"status": "online", "app": settings.app_name}
