@@ -30,9 +30,8 @@ async def get_user(session: AsyncSession, user_id: int) -> User | None:
 async def create_user(session: AsyncSession, data: UserCreate) -> User:
     user = User(**data.model_dump())
     session.add(user)
-    await session.flush()  # INSERT now → id is set (details: episode 016)
-    await session.refresh(user)  # load server defaults like created_at
-    return user
+    await session.flush()  # send INSERT now: id + created_at come back via RETURNING
+    return user  # commit happens in get_session
 
 
 async def update_user(session: AsyncSession, user_id: int, data: UserUpdate) -> User | None:
@@ -41,4 +40,6 @@ async def update_user(session: AsyncSession, user_id: int, data: UserUpdate) -> 
         return None
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(user, key, value)  # only the fields the client actually sent
-    return user  # commit happens in get_session
+    await session.flush()  # send UPDATE now: updated_at = now() is computed by the database …
+    await session.refresh(user)  # … so load it back before anyone reads it
+    return user

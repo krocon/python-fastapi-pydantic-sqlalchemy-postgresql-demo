@@ -40,7 +40,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 013 ✅ | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
 | 014 ✅ | `ep-014` | Eine Session pro Request | One session per request |
 | 015 ✅ | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
-| 016 | `ep-016` | flush, commit und refresh | flush, commit and refresh |
+| 016 ✅ | `ep-016` | flush, commit und refresh | flush, commit and refresh |
 | 017 | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
 | 018 | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
 | 019 | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
@@ -269,4 +269,21 @@ uv run fastapi dev
 curl "localhost:8000/api/v1/users?q=ali"          # alice, alina
 curl "localhost:8000/api/v1/users?active=false"
 curl localhost:8000/api/v1/users/1/items          # sortiert nach Preis, absteigend
+```
+
+## Folge 016 – flush, commit und refresh
+
+- `flush()` schickt das SQL **jetzt** (Transaktion bleibt offen) – danach gibt es die `id`.
+- `commit()` macht die Transaktion dauerhaft (bei uns in `get_session`).
+- `refresh()` lädt Werte neu, die die **Datenbank** berechnet hat.
+
+Beim INSERT holt SQLAlchemy 2 Server-Defaults wie `created_at` schon per `RETURNING` – ein `refresh` wäre ein überflüssiges SELECT.
+Beim UPDATE mit `onupdate=func.now()` dagegen ist `updated_at` danach abgelaufen: ohne `refresh` endet der Zugriff im
+Async-Code mit `MissingGreenlet`.
+
+```bash
+git checkout ep-016
+docker compose exec db psql -U app -d app -c "drop table if exists items, users"   # neue Spalte updated_at
+uv run python -m scripts.create_tables
+DEBUG=true uv run fastapi dev            # SQL im Log: INSERT … RETURNING users.id, users.created_at
 ```
