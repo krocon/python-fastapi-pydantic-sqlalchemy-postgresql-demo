@@ -16,6 +16,7 @@ async def list_users(
     active: bool | None = None,
     limit: int = 20,
     offset: int = 0,
+    with_items: bool = False,
 ) -> tuple[Sequence[User], int]:
     stmt = select(User)
     if q:
@@ -23,6 +24,8 @@ async def list_users(
     if active is not None:
         stmt = stmt.where(User.is_active == active)
     total = await session.scalar(select(func.count()).select_from(stmt.subquery()))
+    if with_items:
+        stmt = stmt.options(selectinload(User.items))
     page = await session.scalars(stmt.order_by(User.id).limit(limit).offset(offset))  # stable order!
     return page.all(), total or 0
 

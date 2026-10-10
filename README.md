@@ -46,7 +46,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 019 ✅ | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
 | 020 ✅ | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
 | 021 ✅ | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
-| 022 | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
+| 022 ✅ | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
 | 023 | `ep-023` | GraphQL-Mutations | GraphQL mutations |
 | 024 | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
 | 025 | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
@@ -360,4 +360,18 @@ git checkout ep-021
 uv run fastapi dev
 curl "localhost:8000/api/v1/users?limit=2&offset=40"
 curl "localhost:8000/api/v1/users?limit=1000"        # 422 less_than_equal
+```
+
+## Folge 022 – GraphQL mit Strawberry
+
+Zweite Schnittstelle, **gleiche** Services: `app/graphql/` definiert Typen (`@strawberry.type`) und eine `Query`.
+`GraphQLRouter` hängt unter `/graphql` (im Browser: GraphiQL). Die Session kommt über denselben `SessionDep` in den Kontext.
+Der Client wählt die Felder selbst – kein Over- oder Underfetching. Unbekannte Felder (`password`) lehnt das Schema ab.
+
+```bash
+git checkout ep-022
+uv sync && uv run fastapi dev
+curl localhost:8000/graphql -H "Content-Type: application/json" \
+     -d '{"query":"{ users { username items { title price } } }"}'
+# Browser: http://localhost:8000/graphql
 ```

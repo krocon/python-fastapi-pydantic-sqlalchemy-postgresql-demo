@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg>=0.30",
     "fastapi[standard]>=0.143.0",
     "sqlalchemy[asyncio]>=2.0",
+    "strawberry-graphql>=0.280",
 ]
 
 [tool.fastapi]
