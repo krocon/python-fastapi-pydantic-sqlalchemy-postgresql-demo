@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
 
 
 @dataclass
@@ -30,4 +30,13 @@ def get_user(user_id: int) -> User | None:
 def create_user(data: UserCreate) -> User:
     user = User(id=len(_USERS) + 1, **data.model_dump())
     _USERS[user.id] = user
+    return user
+
+
+def update_user(user_id: int, data: UserUpdate) -> User | None:
+    user = _USERS.get(user_id)
+    if user is None:
+        return None
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(user, key, value)  # only the fields the client actually sent
     return user

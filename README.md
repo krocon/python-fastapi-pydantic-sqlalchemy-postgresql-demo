@@ -32,7 +32,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 005 ✅ | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
 | 006 ✅ | `ep-006` | Response-Modelle | Response models |
 | 007 ✅ | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
-| 008 | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
+| 008 ✅ | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
 | 009 | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
 | 010 | `ep-010` | Async Engine und Session | Async engine and session |
 | 011 | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
@@ -158,4 +158,17 @@ curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
      -d '{"username":"  Alice ","email":"Alice@Example.COM"}'    # 201 → "alice", "Alice@example.com"
 curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
      -d '{"username":"root","email":"root@example.com"}'          # 422 – 'root' is reserved
+```
+
+## Folge 008 – PATCH richtig mit exclude_unset
+
+`UserUpdate`: alle Felder optional. `model_dump(exclude_unset=True)` liefert nur die Felder, die der Client
+**wirklich geschickt** hat – sonst würden fehlende Felder mit `None` überschrieben.
+
+```bash
+git checkout ep-008
+uv run fastapi dev
+curl -X POST  localhost:8000/api/v1/users   -H "Content-Type: application/json" -d '{"username":"alice","email":"alice@example.com"}'
+curl -X PATCH localhost:8000/api/v1/users/1 -H "Content-Type: application/json" -d '{"role":"admin"}'   # nur role ändert sich
+curl -X PATCH localhost:8000/api/v1/users/1 -H "Content-Type: application/json" -d '{"email":null}'      # 422
 ```

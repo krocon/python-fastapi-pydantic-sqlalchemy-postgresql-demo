@@ -29,6 +29,21 @@ class UserCreate(UserBase):
         return value
 
 
+class UserUpdate(BaseModel):
+    """Body of PATCH – every field optional, only sent fields are applied."""
+
+    email: EmailStr | None = Field(default=None, max_length=100)
+    role: Literal["user", "admin"] | None = None
+    is_active: bool | None = None
+
+    @field_validator("email", "role", "is_active", mode="before")
+    @classmethod
+    def no_explicit_null(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("may be omitted, but not null")
+        return value
+
+
 class UserRead(UserBase):
     """What the API returns – nothing more, nothing less."""
 
