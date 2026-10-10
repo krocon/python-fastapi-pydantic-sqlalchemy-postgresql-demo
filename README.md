@@ -44,7 +44,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 017 ✅ | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
 | 018 ✅ | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
 | 019 ✅ | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
-| 020 | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
+| 020 ✅ | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
 | 021 | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
 | 022 | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
 | 023 | `ep-023` | GraphQL-Mutations | GraphQL mutations |
@@ -333,4 +333,17 @@ uv run alembic upgrade head && uv run fastapi dev
 curl -i -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"alice","email":"alice@example.com"}'
 curl -i -X DELETE localhost:8000/api/v1/users/1      # 204
 curl -i -X DELETE localhost:8000/api/v1/users/1      # 404
+```
+
+## Folge 020 – Duplikate als 409 statt 500
+
+Ein doppelter Username löst in PostgreSQL eine `UNIQUE`-Verletzung aus → `IntegrityError` → ohne Handler **500**.
+`app/core/errors.py` registriert einen Exception-Handler: Constraint-Name (dank Naming Convention) → verständliche
+Meldung mit **409 Conflict**. Kein „erst SELECT, dann INSERT“ – das hätte eine Race Condition; die Datenbank entscheidet.
+
+```bash
+git checkout ep-020
+uv run fastapi dev
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"bob","email":"bob@example.com"}'   # 201
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"bob","email":"bob2@example.com"}'  # 409 Username already exists
 ```

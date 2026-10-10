@@ -8,6 +8,7 @@ from app.services import item_service, user_service
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 NOT_FOUND = {status.HTTP_404_NOT_FOUND: {"description": "User not found"}}
+CONFLICT = {status.HTTP_409_CONFLICT: {"description": "Username or email already exists"}}
 
 
 def user_not_found() -> HTTPException:
@@ -27,14 +28,14 @@ async def get_user(user_id: int, session: SessionDep) -> UserWithItems:
     return user
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, responses=CONFLICT)
 async def create_user(payload: UserCreate, session: SessionDep, response: Response) -> UserRead:
     user = await user_service.create_user(session, payload)
     response.headers["Location"] = f"{router.prefix}/{user.id}"  # where the new resource lives
     return user
 
 
-@router.patch("/{user_id}", responses=NOT_FOUND)
+@router.patch("/{user_id}", responses=NOT_FOUND | CONFLICT)
 async def update_user(user_id: int, payload: UserUpdate, session: SessionDep) -> UserRead:
     user = await user_service.update_user(session, user_id, payload)
     if user is None:
