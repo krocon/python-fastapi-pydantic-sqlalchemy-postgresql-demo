@@ -42,7 +42,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 015 ✅ | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
 | 016 ✅ | `ep-016` | flush, commit und refresh | flush, commit and refresh |
 | 017 ✅ | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
-| 018 | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
+| 018 ✅ | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
 | 019 | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
 | 020 | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
 | 021 | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
@@ -301,4 +301,20 @@ docker compose exec db psql -U app -d app -c "drop table if exists items, users"
 uv run python -m scripts.create_tables && uv run python -m scripts.seed
 DEBUG=true uv run fastapi dev
 curl localhost:8000/api/v1/users/1       # User inkl. items, zwei SELECTs im Log
+```
+
+## Folge 018 – Migrationen mit Alembic
+
+Schluss mit `create_all` und „Tabellen droppen“: Alembic versioniert das Schema.
+`alembic init -t async migrations` erzeugt eine Async-Vorlage; in `migrations/env.py` kommen die URL aus den Settings
+und `Base.metadata` (für `--autogenerate`). Die Naming Convention aus Folge 011 sorgt für stabile Constraint-Namen.
+
+```bash
+git checkout ep-018
+docker compose exec db psql -U app -d app -c "drop table if exists items, users"   # einmalig: Altbestand weg
+uv run alembic upgrade head          # Running upgrade  -> 8647569b0d13, create users and items
+uv run alembic current               # 8647569b0d13 (head)
+# Später, nach einer Modell-Änderung:
+uv run alembic revision --autogenerate -m "add phone to users"
+uv run alembic upgrade head
 ```
