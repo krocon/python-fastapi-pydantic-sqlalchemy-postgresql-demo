@@ -35,7 +35,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 008 ✅ | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
 | 009 ✅ | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
 | 010 ✅ | `ep-010` | Async Engine und Session | Async engine and session |
-| 011 | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
+| 011 ✅ | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
 | 012 | `ep-012` | Geld nie als float speichern | Never store money as float |
 | 013 | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
 | 014 | `ep-014` | Eine Session pro Request | One session per request |
@@ -198,4 +198,17 @@ docker compose up -d
 uv sync
 uv run python -m scripts.db_check      # PostgreSQL 18.x on …
 DEBUG=true uv run python -m scripts.db_check   # mit SQL-Log (echo)
+```
+
+## Folge 011 – Tabellen als Klassen mit Mapped
+
+`app/models/user.py`: Ein SQLAlchemy-2-Modell mit `Mapped[...]`. Der Python-Typ bestimmt die Spalte und `NOT NULL`
+(`Mapped[str | None]` wäre nullable). `server_default=func.now()` setzt die Datenbank selbst.
+Die Tabelle legt vorübergehend ein Skript an – ab Folge 018 übernimmt Alembic.
+
+```bash
+git checkout ep-011
+docker compose up -d
+uv run python -m scripts.create_tables      # zeigt das CREATE TABLE
+docker compose exec db psql -U app -d app -c "\d users"
 ```
