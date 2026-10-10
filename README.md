@@ -38,7 +38,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 011 ✅ | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
 | 012 ✅ | `ep-012` | Geld nie als float speichern | Never store money as float |
 | 013 ✅ | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
-| 014 | `ep-014` | Eine Session pro Request | One session per request |
+| 014 ✅ | `ep-014` | Eine Session pro Request | One session per request |
 | 015 | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
 | 016 | `ep-016` | flush, commit und refresh | flush, commit and refresh |
 | 017 | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
@@ -237,4 +237,22 @@ git checkout ep-013
 docker compose exec db psql -U app -d app -c "drop table if exists items, users"
 uv run python -m scripts.create_tables
 uv run python -m scripts.seed            # user 1: [(1, 'Keyboard', 1), (2, 'Mouse', 1)]
+```
+
+## Folge 014 – Eine Session pro Request
+
+`get_session()` ist eine Dependency mit `yield`: Session auf, Endpoint läuft, `commit` – bei einer Exception `rollback`.
+`SessionDep = Annotated[AsyncSession, Depends(get_session, scope="function")]` – einmal definiert, überall als Typ nutzbar.
+`scope="function"` sorgt dafür, dass der Commit **vor** dem Senden der Antwort passiert (Standard wäre danach).
+Die Services sind jetzt `async` und bekommen die Session als Parameter; die In-Memory-Liste ist weg.
+
+```bash
+git checkout ep-014
+docker compose up -d
+docker compose exec db psql -U app -d app -c "drop table if exists items, users"
+uv run python -m scripts.create_tables
+uv run fastapi dev
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"alice","email":"alice@example.com"}'
+curl -X POST localhost:8000/api/v1/items -H "Content-Type: application/json" -d '{"title":"Keyboard","price":"49.90","owner_id":1}'
+# Server neu starten – die Daten sind noch da
 ```
