@@ -49,7 +49,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 022 ✅ | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
 | 023 ✅ | `ep-023` | GraphQL-Mutations | GraphQL mutations |
 | 024 ✅ | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
-| 025 | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
+| 025 ✅ | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
 | 026 | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
 | 027 | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
 | 028 | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
@@ -401,4 +401,24 @@ git checkout ep-024
 uv sync
 uv run python -m scripts.gen_proto      # = protoc -Iapp/proto --python_out=… --pyi_out=… users.proto
 uv run python -c "from app.proto import users_pb2; u = users_pb2.User(id=1, username='alice'); print(u.SerializeToString())"
+```
+
+## Folge 025 – Protobuf über HTTP
+
+`app/routers/proto.py`: gleiche Services, aber Binär rein und raus (`Content-Type: application/x-protobuf`).
+Rohe Bytes per `await request.body()`, Parsen mit `CreateUserRequest.FromString(...)`, prüfen mit **demselben** `UserCreate`,
+Antwort per `SerializeToString()`. Falscher Content-Type → `415`, kaputte Bytes → `422`.
+
+Gemessen (20 User, 54 Items, gleiche Felder): JSON **5967 Bytes**, Protobuf **1944 Bytes** (≈ ein Drittel).
+Mit gzip schrumpft der Abstand: 652 vs. 529 Bytes.
+
+```bash
+git checkout ep-025
+uv run fastapi dev
+uv run python -c "
+import httpx; from app.proto import users_pb2
+req = users_pb2.CreateUserRequest(username='dave', email='dave@example.com')
+r = httpx.post('http://localhost:8000/api/v1/proto/users', content=req.SerializeToString(),
+               headers={'Content-Type': 'application/x-protobuf'})
+print(r.status_code, users_pb2.User.FromString(r.content))"
 ```
