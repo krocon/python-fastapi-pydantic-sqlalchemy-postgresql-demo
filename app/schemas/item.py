@@ -10,10 +10,11 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-    pass
+    owner_id: int
 
 
 class ItemRead(ItemBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    owner_id: int

@@ -37,7 +37,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 010 ✅ | `ep-010` | Async Engine und Session | Async engine and session |
 | 011 ✅ | `ep-011` | Tabellen als Klassen mit Mapped | Tables as classes with Mapped |
 | 012 ✅ | `ep-012` | Geld nie als float speichern | Never store money as float |
-| 013 | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
+| 013 ✅ | `ep-013` | 1-zu-n-Beziehungen | One-to-many relationships |
 | 014 | `ep-014` | Eine Session pro Request | One session per request |
 | 015 | `ep-015` | Abfragen im 2.0-Stil | Queries in 2.0 style |
 | 016 | `ep-016` | flush, commit und refresh | flush, commit and refresh |
@@ -224,4 +224,17 @@ git checkout ep-012
 uv run python -c "print(sum([19.99] * 10))"                                   # 199.89999999999998
 uv run python -c "from decimal import Decimal; print(sum([Decimal('19.99')] * 10))"   # 199.90
 uv run python -m scripts.create_tables                                        # items.price NUMERIC(10, 2)
+```
+
+## Folge 013 – 1-zu-n-Beziehungen
+
+Ein User hat viele Items: `ForeignKey("users.id", ondelete="CASCADE")` auf der n-Seite,
+`relationship(back_populates=…)` auf beiden Seiten. `cascade="all, delete-orphan"` + `passive_deletes=True`:
+Items gehören zu ihrem User – gelöscht wird per `ON DELETE CASCADE` direkt in PostgreSQL.
+
+```bash
+git checkout ep-013
+docker compose exec db psql -U app -d app -c "drop table if exists items, users"
+uv run python -m scripts.create_tables
+uv run python -m scripts.seed            # user 1: [(1, 'Keyboard', 1), (2, 'Mouse', 1)]
 ```
