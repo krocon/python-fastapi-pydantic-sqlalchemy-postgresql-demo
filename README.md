@@ -31,7 +31,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 004 ✅ | `ep-004` | Konfiguration mit pydantic-settings | Configuration with pydantic-settings |
 | 005 ✅ | `ep-005` | Requests validieren mit Pydantic | Validate requests with Pydantic |
 | 006 ✅ | `ep-006` | Response-Modelle | Response models |
-| 007 | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
+| 007 ✅ | `ep-007` | Eigene Validatoren und EmailStr | Custom validators and EmailStr |
 | 008 | `ep-008` | PATCH richtig mit exclude_unset | PATCH done right with exclude_unset |
 | 009 | `ep-009` | PostgreSQL mit Docker Compose | PostgreSQL with Docker Compose |
 | 010 | `ep-010` | Async Engine und Session | Async engine and session |
@@ -143,4 +143,19 @@ uv run fastapi dev
 curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
      -d '{"username":"alice","email":"alice@example.com"}'
 # {"username":"alice","email":"alice@example.com","role":"user","id":1,"is_active":true,"created_at":"…Z"}
+```
+
+## Folge 007 – Eigene Validatoren und EmailStr
+
+- `EmailStr` prüft echte E-Mail-Syntax (Paket `email-validator`, steckt in `fastapi[standard]`) und normalisiert die Domain.
+- `@field_validator(..., mode="before")` läuft **vor** der Typprüfung (Normalisieren), ohne `mode` **danach** (Regeln).
+- Ein `ValueError` im Validator wird automatisch zu `422`.
+
+```bash
+git checkout ep-007
+uv run fastapi dev
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
+     -d '{"username":"  Alice ","email":"Alice@Example.COM"}'    # 201 → "alice", "Alice@example.com"
+curl -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" \
+     -d '{"username":"root","email":"root@example.com"}'          # 422 – 'root' is reserved
 ```
