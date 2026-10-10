@@ -18,8 +18,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# the database URL comes from the app settings (.env / environment), not from alembic.ini
-config.set_main_option("sqlalchemy.url", str(settings.database_url))
+# the database URL comes from the app settings (.env / environment), not from alembic.ini –
+# unless a caller (e.g. the test suite) already set one
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", str(settings.database_url))
 
 # compare the models against the database for --autogenerate
 target_metadata = Base.metadata

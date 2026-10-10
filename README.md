@@ -51,7 +51,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 024 ✅ | `ep-024` | Protobuf-Schema und Codegen | Protobuf schema and codegen |
 | 025 ✅ | `ep-025` | Protobuf über HTTP | Protobuf over HTTP |
 | 026 ✅ | `ep-026` | Tests mit pytest und httpx | Tests with pytest and httpx |
-| 027 | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
+| 027 ✅ | `ep-027` | Tests gegen echtes PostgreSQL | Tests against real PostgreSQL |
 | 028 | `ep-028` | Lifespan und Health-Check | Lifespan and health check |
 | 029 | `ep-029` | Die API im Docker-Image | The API in a Docker image |
 | 030 | `ep-030` | Finale – REST, GraphQL oder Protobuf | Finale – REST, GraphQL or Protobuf? |
@@ -434,4 +434,17 @@ Noch ein Haken: Die Tests schreiben in die Entwicklungs-Datenbank – das lösen
 git checkout ep-026
 docker compose up -d && uv run alembic upgrade head
 uv run pytest -v          # 4 passed
+```
+
+## Folge 027 – Tests gegen echtes PostgreSQL
+
+Kein SQLite-Ersatz: Die Tests laufen gegen PostgreSQL – in einer **eigenen** Datenbank `app_test`.
+1. Session-Fixture legt `app_test` neu an und baut das Schema mit **Alembic** (`command.upgrade`) – die Migrationen werden mitgetestet.
+2. Jeder Test läuft in einer äußeren Transaktion, die am Ende **zurückgerollt** wird (`join_transaction_mode="create_savepoint"`).
+3. `app.dependency_overrides[get_session]` tauscht die Session aus – für REST, GraphQL und Protobuf zugleich.
+
+```bash
+git checkout ep-027
+docker compose up -d
+uv run pytest -v         # 14 passed – und die Entwicklungs-Datenbank bleibt unberührt
 ```

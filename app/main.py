@@ -5,7 +5,7 @@ from app.core.errors import register_error_handlers
 from app.graphql.schema import graphql_router
 from app.routers import items, proto, users
 
-app = FastAPI(title=settings.app_name, version="0.26.0", debug=settings.debug)
+app = FastAPI(title=settings.app_name, version="0.27.0", debug=settings.debug)
 register_error_handlers(app)
 app.include_router(users.router)
 app.include_router(items.router)
