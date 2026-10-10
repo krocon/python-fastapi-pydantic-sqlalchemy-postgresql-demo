@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 
 from app.core.database import SessionDep
 from app.schemas.item import ItemCreate, ItemRead
@@ -12,8 +12,8 @@ async def list_items(session: SessionDep) -> list[ItemRead]:
     return await item_service.list_items(session)
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_item(payload: ItemCreate, session: SessionDep) -> ItemRead:
     if await user_service.get_user(session, payload.owner_id) is None:
-        raise HTTPException(status_code=404, detail="Owner not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Owner not found")
     return await item_service.create_item(session, payload)

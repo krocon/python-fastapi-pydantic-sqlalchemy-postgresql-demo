@@ -43,7 +43,7 @@ git checkout ep-005        # Stand nach Folge 5
 | 016 ✅ | `ep-016` | flush, commit und refresh | flush, commit and refresh |
 | 017 ✅ | `ep-017` | Lazy Loading und MissingGreenlet | Lazy loading and MissingGreenlet |
 | 018 ✅ | `ep-018` | Migrationen mit Alembic | Migrations with Alembic |
-| 019 | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
+| 019 ✅ | `ep-019` | HTTP-Statuscodes richtig setzen | Getting HTTP status codes right |
 | 020 | `ep-020` | Duplikate als 409 statt 500 | Duplicates as 409, not 500 |
 | 021 | `ep-021` | Pagination mit validierten Query-Parametern | Pagination with validated query parameters |
 | 022 | `ep-022` | GraphQL mit Strawberry | GraphQL with Strawberry |
@@ -317,4 +317,20 @@ uv run alembic current               # 8647569b0d13 (head)
 # Später, nach einer Modell-Änderung:
 uv run alembic revision --autogenerate -m "add phone to users"
 uv run alembic upgrade head
+```
+
+## Folge 019 – HTTP-Statuscodes richtig setzen
+
+- `201 Created` + `Location`-Header beim Anlegen
+- `204 No Content` beim Löschen (kein Body)
+- `404 Not Found`, wenn es die Ressource nicht gibt – dokumentiert per `responses=`
+- `422` bei ungültigen Daten kommt automatisch von FastAPI
+- Konstanten aus `fastapi.status` statt magischer Zahlen
+
+```bash
+git checkout ep-019
+uv run alembic upgrade head && uv run fastapi dev
+curl -i -X POST localhost:8000/api/v1/users -H "Content-Type: application/json" -d '{"username":"alice","email":"alice@example.com"}'
+curl -i -X DELETE localhost:8000/api/v1/users/1      # 204
+curl -i -X DELETE localhost:8000/api/v1/users/1      # 404
 ```

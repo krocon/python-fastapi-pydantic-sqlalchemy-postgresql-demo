@@ -50,3 +50,12 @@ async def update_user(session: AsyncSession, user_id: int, data: UserUpdate) -> 
     await session.flush()  # send UPDATE now: updated_at = now() is computed by the database …
     await session.refresh(user)  # … so load it back before anyone reads it
     return user
+
+
+async def delete_user(session: AsyncSession, user_id: int) -> bool:
+    user = await session.get(User, user_id)
+    if user is None:
+        return False
+    await session.delete(user)  # items go too: ON DELETE CASCADE
+    await session.flush()
+    return True
